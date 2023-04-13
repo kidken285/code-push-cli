@@ -998,3 +998,5 @@ A: An application running a CodePush SDK that doesn't support code signing will 
 Q: I've lost my private key, what should I do in this situation?
 
 A: We do not have a copy of your key so you will need to create new private/public key pair, release a new binary update using the new public key, and then release a CodePush update using your new private key.
+//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
+//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

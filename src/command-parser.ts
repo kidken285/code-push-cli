@@ -1099,6 +1099,188 @@ var argv = yargs
         },
     )
     .command(
+        'release-react-webpack',
+        'Release a React Native update to an app deployment',
+        (yargs: yargs.Argv) => {
+            isValidCommandCategory = true;
+            isValidCommand = true;
+            yargs
+                .usage(USAGE_PREFIX + ' release-react-webpack <appName> <platform> [options]')
+                .demand(/*count*/ 2, /*max*/ 2) // Require exactly two non-option arguments
+                .example(
+                    'release-react-webpack MyApp ios',
+                    'Releases the React Native iOS project in the current working directory to the "MyApp" app\'s "Staging" deployment',
+                )
+                .example(
+                    'release-react-webpack MyApp android -d Production -k ~/.ssh/codepush_rsa',
+                    'Releases the React Native Android project in the current working directory to the "MyApp" app\'s "Production" deployment, signed with the "codepush_rsa" private key',
+                )
+                .example(
+                    'release-react-webpack MyApp windows --dev',
+                    'Releases the development bundle of the React Native Windows project in the current working directory to the "MyApp" app\'s "Staging" deployment',
+                )
+                .option('bundleName', {
+                    alias: 'b',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Name of the generated JS bundle file. If unspecified, the standard bundle name will be used, depending on the specified platform: "main.jsbundle" (iOS), "index.android.bundle" (Android) or "index.windows.bundle" (Windows)',
+                    type: 'string',
+                })
+                .option('deploymentName', {
+                    alias: 'd',
+                    default: 'Staging',
+                    demand: false,
+                    description: 'Deployment to release the update to',
+                    type: 'string',
+                })
+                .option('description', {
+                    alias: 'des',
+                    default: null,
+                    demand: false,
+                    description: 'Description of the changes made to the app with this release',
+                    type: 'string',
+                })
+                .option('development', {
+                    alias: 'dev',
+                    default: false,
+                    demand: false,
+                    description: 'Specifies whether to generate a dev or release build',
+                    type: 'boolean',
+                })
+                .option('disabled', {
+                    alias: 'x',
+                    default: false,
+                    demand: false,
+                    description:
+                        'Specifies whether this release should be immediately downloadable',
+                    type: 'boolean',
+                })
+                .option('entryFile', {
+                    alias: 'e',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to the app\'s entry Javascript file. If omitted, "index.<platform>.js" and then "index.js" will be used (if they exist)',
+                    type: 'string',
+                })
+                .option('gradleFile', {
+                    alias: 'g',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to the gradle file which specifies the binary version you want to target this release at (android only).',
+                })
+                .option('podFile', {
+                    alias: 'pf',
+                    default: null,
+                    demand: false,
+                    description: 'Path to the cocopods config file (iOS only).',
+                })
+                .option('mandatory', {
+                    alias: 'm',
+                    default: false,
+                    demand: false,
+                    description: 'Specifies whether this release should be considered mandatory',
+                    type: 'boolean',
+                })
+                .option('noDuplicateReleaseError', {
+                    default: false,
+                    demand: false,
+                    description:
+                        'When this flag is set, releasing a package that is identical to the latest release will produce a warning instead of an error',
+                    type: 'boolean',
+                })
+                .option('plistFile', {
+                    alias: 'p',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to the plist file which specifies the binary version you want to target this release at (iOS only).',
+                })
+                .option('plistFilePrefix', {
+                    alias: 'pre',
+                    default: null,
+                    demand: false,
+                    description:
+                        "Prefix to append to the file name when attempting to find your app's Info.plist file (iOS only).",
+                })
+                .option('rollout', {
+                    alias: 'r',
+                    default: '100%',
+                    demand: false,
+                    description:
+                        'Percentage of users this release should be immediately available to',
+                    type: 'string',
+                })
+                .option('privateKeyPath', {
+                    alias: 'k',
+                    default: false,
+                    demand: false,
+                    description:
+                        'Specifies the location of a RSA private key to sign the release with',
+                    type: 'string',
+                })
+                .option('sourcemapOutput', {
+                    alias: 's',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to where the sourcemap for the resulting bundle should be written. If omitted, a sourcemap will not be generated.',
+                    type: 'string',
+                })
+                .option('sourcemapOutputDir', {
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to folder where the sourcemap for the resulting bundle should be written. Name of sourcemap file will be generated automatically. This argument will be ignored if "sourcemap-output" argument is provided. If omitted, a sourcemap will not be generated.',
+                    type: 'string',
+                })
+                .option('targetBinaryVersion', {
+                    alias: 't',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Semver expression that specifies the binary app version(s) this release is targeting (e.g. 1.1.0, ~1.2.3). If omitted, the release will target the exact version specified in the "Info.plist" (iOS), "build.gradle" (Android) or "Package.appxmanifest" (Windows) files.',
+                    type: 'string',
+                })
+                .option('outputDir', {
+                    alias: 'o',
+                    default: null,
+                    demand: false,
+                    description:
+                        'Path to where the bundle and sourcemap should be written. If omitted, a bundle and sourcemap will not be written.',
+                    type: 'string',
+                })
+                .option('config', {
+                    alias: 'c',
+                    default: null,
+                    demand: false,
+                    description: 'Path to the React Native CLI configuration file',
+                    type: 'string',
+                })
+                .option('extraBundlerOptions', {
+                    default: [],
+                    demand: false,
+                    description:
+                        'Option that gets passed to react-native bundler. Can be specified multiple times',
+                    type: 'array',
+                })
+                .option('extraHermesFlags', {
+                    default: [],
+                    demand: false,
+                    description:
+                        'Flag that gets passed to Hermes, JavaScript to bytecode compiler. Can be specified multiple times',
+                    type: 'array',
+                })
+                .check((argv: any, aliases: { [aliases: string]: string }): any => {
+                    return checkValidReleaseOptions(argv);
+                });
+
+            addCommonConfiguration(yargs);
+        },
+    )
+    .command(
         'rollback',
         'Rollback the latest release for an app deployment',
         (yargs: yargs.Argv) => {
@@ -1525,6 +1707,44 @@ function createCommand(): cli.ICommand {
             case 'release-react':
                 if (arg1 && arg2) {
                     cmd = { type: cli.CommandType.releaseReact };
+
+                    var releaseReactCommand = <cli.IReleaseReactCommand>cmd;
+
+                    releaseReactCommand.appName = arg1;
+                    releaseReactCommand.platform = arg2;
+
+                    releaseReactCommand.appStoreVersion = argv['targetBinaryVersion'] as string;
+                    releaseReactCommand.bundleName = argv['bundleName'] as string;
+                    releaseReactCommand.deploymentName = argv['deploymentName'] as string;
+                    releaseReactCommand.disabled = argv['disabled'] as boolean;
+                    releaseReactCommand.description = argv['description']
+                        ? backslash(argv['description'] as string)
+                        : '';
+                    releaseReactCommand.development = argv['development'] as boolean;
+                    releaseReactCommand.entryFile = argv['entryFile'] as string;
+                    releaseReactCommand.gradleFile = argv['gradleFile'] as string;
+                    releaseReactCommand.podFile = argv['podFile'] as string;
+                    releaseReactCommand.mandatory = argv['mandatory'] as boolean;
+                    releaseReactCommand.noDuplicateReleaseError = argv[
+                        'noDuplicateReleaseError'
+                    ] as boolean;
+                    releaseReactCommand.plistFile = argv['plistFile'] as string;
+                    releaseReactCommand.plistFilePrefix = argv['plistFilePrefix'] as string;
+                    releaseReactCommand.rollout = getRolloutValue(argv['rollout'] as string);
+                    releaseReactCommand.privateKeyPath = argv['privateKeyPath'] as string;
+                    releaseReactCommand.sourcemapOutput = argv['sourcemapOutput'] as string;
+                    releaseReactCommand.sourcemapOutputDir = argv['sourcemapOutputDir'] as string;
+                    releaseReactCommand.outputDir = argv['outputDir'] as string;
+                    releaseReactCommand.config = argv['config'] as string;
+                    releaseReactCommand.extraBundlerOptions = argv[
+                        'extraBundlerOptions'
+                    ] as string[];
+                    releaseReactCommand.extraHermesFlags = argv['extraHermesFlags'] as string[];
+                }
+                break;
+            case 'release-react-webpack':
+                if (arg1 && arg2) {
+                    cmd = { type: cli.CommandType.releaseReactWebPack };
 
                     var releaseReactCommand = <cli.IReleaseReactCommand>cmd;
 

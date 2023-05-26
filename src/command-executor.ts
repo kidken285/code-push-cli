@@ -33,6 +33,7 @@ import {
     getHermesEnabled,
     getiOSHermesEnabled,
     runReactNativeBundleCommand,
+    runReactNativeWebpackBundleCommand,
     runHermesEmitBinaryCommand,
     getReactNativeProjectAppVersion,
 } from './lib/react-native-utils';
@@ -654,6 +655,8 @@ export function execute(command: cli.ICommand): Promise<void> {
 
             case cli.CommandType.releaseReact:
                 return releaseReact(<cli.IReleaseReactCommand>command);
+            case cli.CommandType.releaseReactWebPack:
+                return releaseReactWebPack(<cli.IReleaseReactCommand>command);
 
             case cli.CommandType.rollback:
                 return rollback(<cli.IRollbackCommand>command);
@@ -1388,6 +1391,158 @@ export var releaseReact = (command: cli.IReleaseReactCommand): Promise<void> => 
             .then(() => deleteFolder(`${os.tmpdir()}/react-*`))
             .then(() =>
                 runReactNativeBundleCommand(
+                    bundleName,
+                    command.development || false,
+                    entryFile,
+                    outputFolder,
+                    platform,
+                    command.sourcemapOutput,
+                    command.config,
+                    command.extraBundlerOptions,
+                ),
+            )
+            .then(() => {
+                if (platform === 'android') {
+                    return getHermesEnabled(command.gradleFile).then((isHermesEnabled) => {
+                        if (isHermesEnabled) {
+                            return runHermesEmitBinaryCommand(
+                                bundleName,
+                                outputFolder,
+                                command.sourcemapOutput,
+                                command.extraHermesFlags,
+                            );
+                        }
+                    });
+                } else if (platform === 'ios') {
+                    return getiOSHermesEnabled(command.podFile).then((isHermesEnabled) => {
+                        if (isHermesEnabled) {
+                            return runHermesEmitBinaryCommand(
+                                bundleName,
+                                outputFolder,
+                                command.sourcemapOutput,
+                                command.extraHermesFlags,
+                            );
+                        }
+                    });
+                }
+            })
+            .then(() => {
+                out.text(chalk.cyan('\nReleasing update contents to CodePush:\n'));
+                return release(releaseCommand);
+            })
+            .then(() => {
+                if (!command.outputDir) {
+                    deleteFolder(outputFolder);
+                }
+            })
+            .catch((err: Error) => {
+                deleteFolder(outputFolder);
+                throw err;
+            })
+    );
+};
+export var releaseReactWebPack = (command: cli.IReleaseReactCommand): Promise<void> => {
+    var bundleName: string = command.bundleName;
+    var entryFile: string = command.entryFile;
+    var outputFolder: string = command.outputDir || path.join(os.tmpdir(), 'CodePush');
+    var platform: string = (command.platform = command.platform.toLowerCase());
+    var releaseCommand: cli.IReleaseCommand = <any>command;
+
+    // we have to add "CodePush" root forlder to make update contents file structure
+    // to be compatible with React Native client SDK
+    outputFolder = path.join(outputFolder, 'CodePush');
+    mkdirp.sync(outputFolder);
+
+    // Check for app and deployment exist before releasing an update.
+    // This validation helps to save about 1 minute or more in case user has typed wrong app or deployment name.
+    return (
+        validateDeployment(command.appName, command.deploymentName)
+            .then((): any => {
+                releaseCommand.package = outputFolder;
+
+                switch (platform) {
+                    case 'android':
+                    case 'ios':
+                    case 'windows':
+                        if (!bundleName) {
+                            bundleName =
+                                platform === 'ios' ? 'main.jsbundle' : `index.${platform}.bundle`;
+                        }
+
+                        break;
+                    default:
+                        throw new Error('Platform must be "android", "ios", or "windows".');
+                }
+
+                try {
+                    var projectPackageJson: any = require(path.join(process.cwd(), 'package.json'));
+                    var projectName: string = projectPackageJson.name;
+                    if (!projectName) {
+                        throw new Error(
+                            'The "package.json" file in the CWD does not have the "name" field set.',
+                        );
+                    }
+
+                    const isReactNativeProject: boolean =
+                        projectPackageJson.dependencies['react-native'] ||
+                        (projectPackageJson.devDependencies &&
+                            projectPackageJson.devDependencies['react-native']);
+                    if (!isReactNativeProject) {
+                        throw new Error('The project in the CWD is not a React Native project.');
+                    }
+                } catch (error) {
+                    throw new Error(
+                        'Unable to find or read "package.json" in the CWD. The "release-react" command must be executed in a React Native project folder.',
+                    );
+                }
+
+                if (!entryFile) {
+                    entryFile = `index.${platform}.js`;
+                    if (fileDoesNotExistOrIsDirectory(entryFile)) {
+                        entryFile = 'index.js';
+                    }
+
+                    if (fileDoesNotExistOrIsDirectory(entryFile)) {
+                        throw new Error(
+                            `Entry file "index.${platform}.js" or "index.js" does not exist.`,
+                        );
+                    }
+                } else {
+                    if (fileDoesNotExistOrIsDirectory(entryFile)) {
+                        throw new Error(`Entry file "${entryFile}" does not exist.`);
+                    }
+                }
+
+                if (command.appStoreVersion) {
+                    throwForInvalidSemverRange(command.appStoreVersion);
+                }
+
+                var appVersionPromise: Promise<string> = command.appStoreVersion
+                    ? Promise.resolve(command.appStoreVersion)
+                    : getReactNativeProjectAppVersion(command, projectName);
+
+                if (command.sourcemapOutputDir && command.sourcemapOutput) {
+                    out.text(
+                        '\n"sourcemap-output-dir" argument will be ignored as "sourcemap-output" argument is provided.\n',
+                    );
+                }
+
+                if ((command.outputDir || command.sourcemapOutputDir) && !command.sourcemapOutput) {
+                    const sourcemapDir = command.sourcemapOutputDir || releaseCommand.package;
+                    command.sourcemapOutput = path.join(sourcemapDir, bundleName + '.map');
+                }
+
+                return appVersionPromise;
+            })
+            .then((appVersion: string) => {
+                releaseCommand.appStoreVersion = appVersion;
+                return createEmptyTempReleaseFolder(outputFolder);
+            })
+            // This is needed to clear the react native bundler cache:
+            // https://github.com/facebook/react-native/issues/4289
+            .then(() => deleteFolder(`${os.tmpdir()}/react-*`))
+            .then(() =>
+                runReactNativeWebpackBundleCommand(
                     bundleName,
                     command.development || false,
                     entryFile,

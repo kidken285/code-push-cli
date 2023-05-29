@@ -1,12 +1,12 @@
 {
   "name": "@kid_ken/code-push-cli",
-  "version": "3.0.10",
+  "version": "3.0.11",
   "description": "Management CLI for the CodePush service",
   "main": "bin/cli.js",
   "scripts": {
     "start": "tsc --watch",
     "build": "rm -rf bin && tsc",
-    "release": "npm test && npm run build && standard-version && git push --follow-tags origin master && npm publish",
+    "release": "npm test && npm run build && standard-version && git push --follow-tags origin master",
     "test": "echo 'no tests'"
   },
   "bin": {

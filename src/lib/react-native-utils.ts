@@ -542,7 +542,7 @@ export function getHermesEnabled(gradleFile?: string): Promise<boolean> {
             );
         })
         .then((buildGradle: any) => {
-            return Array.from(buildGradle['project.ext.react']).includes('enableHermes: true');
+            return Array.from(buildGradle["project.ext.react"] || []).some((line: string) => /^enableHermes\s{0,}:\s{0,}true/.test(line));
         });
 }
 
@@ -561,7 +561,7 @@ export function getiOSHermesEnabled(podFile: string): Promise<boolean> {
                 reject(error);
                 return;
             }
-            resolve(/:hermes_enabled(\s+|\n+)?=>(\s+|\n+)?true/.test(res));
+            resolve(/^([^#\n]*:?hermes_enabled(\s+|\n+)?(=>|:)(\s+|\n+)?true)$/.test(res));
         });
     });
 }

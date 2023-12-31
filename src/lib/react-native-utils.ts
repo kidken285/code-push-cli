@@ -458,29 +458,27 @@ export function runHermesEmitBinaryCommand(
     });
 }
 
-export function getHermesEnabled(gradleFile?: string): Promise<boolean> {
-    let buildGradlePath: string = path.join('android', 'app');
-    if (gradleFile) {
-        buildGradlePath = gradleFile;
-    }
-    if (fs.lstatSync(buildGradlePath).isDirectory()) {
-        buildGradlePath = path.join(buildGradlePath, 'build.gradle');
-    }
+export function getHermesEnabled(gradleFile: string): any {
+  let buildGradlePath: string = path.join("android", "app");
+  if (gradleFile) {
+    buildGradlePath = gradleFile;
+  }
+  if (fs.lstatSync(buildGradlePath).isDirectory()) {
+    buildGradlePath = path.join(buildGradlePath, "build.gradle");
+  }
 
-    if (fileDoesNotExistOrIsDirectory(buildGradlePath)) {
-        throw new Error(`Unable to find gradle file "${buildGradlePath}".`);
-    }
+  if (fileDoesNotExistOrIsDirectory(buildGradlePath)) {
+    throw new Error(`Unable to find gradle file "${buildGradlePath}".`);
+  }
 
-    return g2js
-        .parseFile(buildGradlePath)
-        .catch(() => {
-            throw new Error(
-                `Unable to parse the "${buildGradlePath}" file. Please ensure it is a well-formed Gradle file.`,
-            );
-        })
-        .then((buildGradle: any) => {
-            return Array.from(buildGradle['project.ext.react']).includes('enableHermes: true');
-        });
+  return g2js
+    .parseFile(buildGradlePath)
+    .catch(() => {
+      throw new Error(`Unable to parse the "${buildGradlePath}" file. Please ensure it is a well-formed Gradle file.`);
+    })
+    .then((buildGradle: any) => {
+      return Array.from(buildGradle["project.ext.react"] || []).includes("enableHermes: true");
+    });
 }
 
 export function getiOSHermesEnabled(podFile: string): Promise<boolean> {

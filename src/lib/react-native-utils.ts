@@ -357,6 +357,69 @@ export function runReactNativeBundleCommand(
         });
     });
 }
+export function runReactNativeWebpackBundleCommand(
+    bundleName: string,
+    development: boolean,
+    entryFile: string,
+    outputFolder: string,
+    platform: string,
+    sourcemapOutput: string,
+    config: string,
+    extraBundlerOptions?: string[],
+): Promise<void> {
+    let reactNativeBundleArgs: string[] = [];
+    let envNodeArgs: string = process.env.CODE_PUSH_NODE_ARGS;
+
+    if (typeof envNodeArgs !== 'undefined') {
+        Array.prototype.push.apply(reactNativeBundleArgs, envNodeArgs.trim().split(/\s+/));
+    }
+
+    Array.prototype.push.apply(reactNativeBundleArgs, [
+        getCliPath(),
+        'webpack-bundle',
+        '--assets-dest',
+        outputFolder,
+        '--bundle-output',
+        path.join(outputFolder, bundleName),
+        '--dev',
+        development,
+        '--entry-file',
+        entryFile,
+        '--platform',
+        platform,
+        ...extraBundlerOptions,
+    ]);
+
+    if (sourcemapOutput) {
+        reactNativeBundleArgs.push('--sourcemap-output', sourcemapOutput);
+    }
+
+    if (config) {
+        reactNativeBundleArgs.push('--config', config);
+    }
+
+    out.text(chalk.cyan('Running "react-native bundle" command:\n'));
+    var reactNativeBundleProcess = spawn('node', reactNativeBundleArgs);
+    out.text(`node ${reactNativeBundleArgs.join(' ')}`);
+
+    return new Promise<void>((resolve, reject) => {
+        reactNativeBundleProcess.stdout.on('data', (data: Buffer) => {
+            out.text(data.toString().trim());
+        });
+
+        reactNativeBundleProcess.stderr.on('data', (data: Buffer) => {
+            console.error(data.toString().trim());
+        });
+
+        reactNativeBundleProcess.on('close', (exitCode: number) => {
+            if (exitCode) {
+                reject(new Error(`"react-native bundle" command exited with code ${exitCode}.`));
+            }
+
+            resolve(<void>null);
+        });
+    });
+}
 
 export function runHermesEmitBinaryCommand(
     bundleName: string,

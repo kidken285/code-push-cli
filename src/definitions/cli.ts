@@ -30,6 +30,7 @@ export enum CommandType {
     release,
     releaseCordova,
     releaseReact,
+    releaseReactWebPack,
     rollback,
     whoami,
 }

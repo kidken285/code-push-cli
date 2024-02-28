@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.17](https://github.com/kidken285/code-push-cli/compare/v3.0.16...v3.0.17) (2024-02-28)
+
 ### [3.0.16](https://github.com/kidken285/code-push-cli/compare/v3.0.14...v3.0.16) (2024-02-26)
 
 ### [3.0.14](https://github.com/kidken285/code-push-cli/compare/v3.0.13...v3.0.14) (2023-12-31)

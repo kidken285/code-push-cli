@@ -346,6 +346,9 @@ function deleteFolder(folderPath: string): Promise<void> {
             if (err) {
                 reject(err);
             } else {
+                out.text(
+                    `Successfully delete ${folderPath}`
+                );
                 resolve(<void>null);
             }
         });
@@ -1541,6 +1544,7 @@ export var releaseReactWebPack = (command: cli.IReleaseReactCommand): Promise<vo
             // This is needed to clear the react native bundler cache:
             // https://github.com/facebook/react-native/issues/4289
             .then(() => deleteFolder(`${os.tmpdir()}/react-*`))
+            .then(() => deleteFolder(path.join('node_modules', '.cache')))
             .then(() =>
                 runReactNativeWebpackBundleCommand(
                     bundleName,

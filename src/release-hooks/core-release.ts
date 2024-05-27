@@ -12,6 +12,7 @@ import * as cli from '../definitions/cli';
 const progress = require('progress');
 
 import AccountManager = require('code-push');
+import { formatBytes } from '../util/interaction/out';
 
 var coreReleaseHook: cli.ReleaseHook = (
     currentCommand: cli.IReleaseCommand,
@@ -78,6 +79,7 @@ var coreReleaseHook: cli.ReleaseHook = (
             });
         })
         .then((packagePath: string): Promise<cli.IReleaseCommand> => {
+            out.text(`Upload file "${packagePath}" total size is ` + `${formatBytes(fs.lstatSync(packagePath).size)}`);
             var lastTotalProgress = 0;
             var progressBar = new progress('Upload progress:[:bar] :percent :etas', {
                 complete: '=',
@@ -111,6 +113,7 @@ var coreReleaseHook: cli.ReleaseHook = (
                     );
                 })
                 .then((): void => {
+                    
                     out.text(
                         `Successfully released an update containing the "${originalCommand.package}" ` +
                             `${

@@ -377,16 +377,17 @@ export function runReactNativeWebpackBundleCommand(
     Array.prototype.push.apply(reactNativeBundleArgs, [
         getCliPath(),
         'webpack-bundle',
-        '--assets-dest',
-        outputFolder,
-        '--bundle-output',
-        path.join(outputFolder, bundleName),
-        '--dev',
-        development,
         '--entry-file',
         entryFile,
         '--platform',
         platform,
+        '--dev',
+        development,
+        '--reset-cache',
+        '--bundle-output',
+        path.join(outputFolder, bundleName),
+        '--assets-dest',
+        outputFolder,
         ...extraBundlerOptions,
     ]);
 
